@@ -24,6 +24,11 @@ y = data['Survived']
 clf = RandomForestClassifier(random_state=42)
 clf.fit(X, y)
 
+@app.route('/')
+def home():
+    return "Welcome to the Titanic Prediction API. Use the /predict endpoint to send predictions."
+
+
 # Rutas de la API
 @app.route('/predict', methods=['POST'])
 def predict():
