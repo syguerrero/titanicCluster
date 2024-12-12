@@ -33,23 +33,29 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        # Obtener los datos JSON enviados al servidor
         content = request.get_json()
+        app.logger.info(f"Datos recibidos: {content}")
 
         # Validar campos obligatorios
         required_fields = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
         for field in required_fields:
             if field not in content:
+                app.logger.error(f"Campo faltante: {field}")
                 return jsonify({'error': f"Missing field: {field}"}), 400
 
-        # Validar datos individuales
+        # Validar valores de los campos
         if content['Pclass'] not in [1, 2, 3]:
+            app.logger.error(f"Valor inválido para Pclass: {content['Pclass']}")
             return jsonify({'error': "Invalid value for Pclass"}), 400
         if content['Sex'] not in ['male', 'female']:
+            app.logger.error(f"Valor inválido para Sex: {content['Sex']}")
             return jsonify({'error': "Invalid value for Sex"}), 400
         if content['Embarked'] not in ['C', 'Q', 'S']:
+            app.logger.error(f"Valor inválido para Embarked: {content['Embarked']}")
             return jsonify({'error': "Invalid value for Embarked"}), 400
 
-        # Preparar los datos para el modelo
+        # Crear DataFrame para predicción
         usuario = pd.DataFrame({
             'Pclass': [content['Pclass']],
             'Age': [content['Age']],
@@ -60,18 +66,16 @@ def predict():
             'Embarked_Q': [1 if content['Embarked'] == 'Q' else 0],
             'Embarked_S': [1 if content['Embarked'] == 'S' else 0]
         })
-        # SOLUCIÓN TEMPORAL: Ignorar columnas no numéricas
-        usuario = usuario.apply(pd.to_numeric, errors='coerce')  # Convierte a numérico o NaN si no es posible
-        if usuario.isnull().any().any():  # Si hay valores NaN después de la conversión, devolver error
-            return jsonify({'error': 'Invalid data in input'}), 400
+        app.logger.info(f"Datos preparados para predicción: {usuario}")
 
         # Realizar predicción
         prediccion = model.predict(usuario)[0]
         resultado = "Sobrevivió" if prediccion == 1 else "No sobrevivió"
+        app.logger.info(f"Resultado de la predicción: {resultado}")
         return jsonify({'resultado': resultado})
 
     except Exception as e:
-        app.logger.error(f"Error during prediction: {e}")
+        app.logger.error(f"Error durante la predicción: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 # Ejecutar el servidor
