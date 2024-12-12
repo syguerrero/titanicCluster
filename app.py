@@ -32,27 +32,35 @@ def home():
 # Rutas de la API
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Obtener los datos enviados en la solicitud
-    content = request.get_json()
+    try:
+        # Validate input JSON
+        content = request.get_json()
+        required_fields = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
+        for field in required_fields:
+            if field not in content:
+                return jsonify({'error': f"Missing field: {field}"}), 400
 
-    # Crear un DataFrame para los datos del usuario
-    usuario = pd.DataFrame({
-        'Pclass': [content['Pclass']],
-        'Age': [content['Age']],
-        'SibSp': [content['SibSp']],
-        'Parch': [content['Parch']],
-        'Fare': [content['Fare']],
-        'Sex_male': [1 if content['Sex'] == 'male' else 0],
-        'Embarked_Q': [1 if content['Embarked'] == 'Q' else 0],
-        'Embarked_S': [1 if content['Embarked'] == 'S' else 0]
-    })
+        # Prepare the input for prediction
+        usuario = pd.DataFrame({
+            'Pclass': [content['Pclass']],
+            'Age': [content['Age']],
+            'SibSp': [content['SibSp']],
+            'Parch': [content['Parch']],
+            'Fare': [content['Fare']],
+            'Sex_male': [1 if content['Sex'] == 'male' else 0],
+            'Embarked_Q': [1 if content['Embarked'] == 'Q' else 0],
+            'Embarked_S': [1 if content['Embarked'] == 'S' else 0]
+        })
 
-    # Realizar la predicción
-    prediccion = clf.predict(usuario)[0]
-    resultado = "Sobrevivió" if prediccion == 1 else "No sobrevivió"
+        # Perform prediction
+        prediccion = model.predict(usuario)[0]
+        resultado = "Sobrevivió" if prediccion == 1 else "No sobrevivió"
+        return jsonify({'resultado': resultado})
 
-    # Responder con el resultado
-    return jsonify({'resultado': resultado})
+    except Exception as e:
+        # Log the error and return a 500 response
+        app.logger.error(f"Error during prediction: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 # Ejecutar el servidor
 if __name__ == '__main__':
