@@ -60,6 +60,10 @@ def predict():
             'Embarked_Q': [1 if content['Embarked'] == 'Q' else 0],
             'Embarked_S': [1 if content['Embarked'] == 'S' else 0]
         })
+        # SOLUCIÓN TEMPORAL: Ignorar columnas no numéricas
+        usuario = usuario.apply(pd.to_numeric, errors='coerce')  # Convierte a numérico o NaN si no es posible
+        if usuario.isnull().any().any():  # Si hay valores NaN después de la conversión, devolver error
+            return jsonify({'error': 'Invalid data in input'}), 400
 
         # Realizar predicción
         prediccion = model.predict(usuario)[0]
