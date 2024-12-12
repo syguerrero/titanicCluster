@@ -33,14 +33,23 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Validate input JSON
         content = request.get_json()
+
+        # Validar campos obligatorios
         required_fields = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
         for field in required_fields:
             if field not in content:
                 return jsonify({'error': f"Missing field: {field}"}), 400
 
-        # Prepare the input for prediction
+        # Validar datos individuales
+        if content['Pclass'] not in [1, 2, 3]:
+            return jsonify({'error': "Invalid value for Pclass"}), 400
+        if content['Sex'] not in ['male', 'female']:
+            return jsonify({'error': "Invalid value for Sex"}), 400
+        if content['Embarked'] not in ['C', 'Q', 'S']:
+            return jsonify({'error': "Invalid value for Embarked"}), 400
+
+        # Preparar los datos para el modelo
         usuario = pd.DataFrame({
             'Pclass': [content['Pclass']],
             'Age': [content['Age']],
@@ -52,13 +61,12 @@ def predict():
             'Embarked_S': [1 if content['Embarked'] == 'S' else 0]
         })
 
-        # Perform prediction
+        # Realizar predicción
         prediccion = model.predict(usuario)[0]
         resultado = "Sobrevivió" if prediccion == 1 else "No sobrevivió"
         return jsonify({'resultado': resultado})
 
     except Exception as e:
-        # Log the error and return a 500 response
         app.logger.error(f"Error during prediction: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
